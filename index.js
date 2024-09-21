@@ -70,19 +70,20 @@ const runServer = () => {
 
   // Route to generate CAPTCHA
   app.post("/genCaptcha", async (req, res, next) => {
-    const { captchaLength, captchaType, audioCaptchaRequired } = req.body;
+    const { reqId, captchaLength, captchaType, audioCaptchaRequired } = req?.body;
     if (
+      !reqId ||
       !captchaLength ||
       !captchaType ||
       typeof audioCaptchaRequired === "undefined"
     ) {
-      return res.status(400).json({
+      return res?.status(400)?.json({
         error: true,
         message:
-          "Missing required fields: captchaLength, captchaType, and audioCaptchaRequired",
+          "Missing required fields: reqId, captchaLength, captchaType, and audioCaptchaRequired",
       });
     }
-    const data = JSON.stringify({
+    const data = JSON?.stringify({
       captchaLength: captchaLength,
       captchaType: captchaType,
       audioCaptchaRequired: audioCaptchaRequired,
@@ -102,7 +103,7 @@ const runServer = () => {
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
-        "x-request-id": req?.xRequestId,
+        "x-request-id": reqId,
         "Referer": "https://myaadhaar.uidai.gov.in/",
         "Referrer-Policy": "strict-origin",
       },
@@ -113,9 +114,9 @@ const runServer = () => {
       const response = await axios.request(config);
       console.log(response?.data, "CAPTCHA Generation response");
       logger.info(
-        `CAPTCHA Generation Request Successful - Status: ${response.status}`
+        `CAPTCHA Generation Request Successful - Status: ${response.data}`
       );
-      res.status(200).json({ ...response.data, xRequestId: req.xRequestId });
+      res.status(200).json({ ...response?.data, xRequestId: reqId });
     } catch (error) {
       logger.error(`CAPTCHA Generation Failed - Error: ${error.message}`);
       next(error);
@@ -155,7 +156,7 @@ const runServer = () => {
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
-        "x-request-id": "e599af75-6a0d-463e-9ac3-5ede6ec45094",
+        "x-request-id": transactionId,
         "Referer": "https://myaadhaar.uidai.gov.in/",
         "Referrer-Policy": "strict-origin",
       },
@@ -167,7 +168,7 @@ const runServer = () => {
       console.log(response?.data, "Adhaar Verfication response");
       console.log(response?.data);
       logger.info(
-        `Aadhaar Verification Request Successful - Status: ${response.status}`
+        `Aadhaar Verification Request Successful - Status: ${response.data}`
       );
       res.status(200).json(response.data);
     } catch (error) {
