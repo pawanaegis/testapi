@@ -8,7 +8,7 @@ const os = require("os");
 const winston = require("winston");
 const { v4: uuidv4 } = require("uuid");
 const rateLimit = require("express-rate-limit");
-const timeout = require("connect-timeout");
+const timeout = require('connect-timeout');
 
 // Create a Winston logger
 const logger = winston.createLogger({
@@ -40,11 +40,6 @@ const limiter = rateLimit({
   headers: true,
 });
 
-// Timeout middleware (30 seconds)
-const haltOnTimedOut = (req, res, next) => {
-  if (!req.timedout) next();
-};
-
 // Main application logic
 const runServer = () => {
   const app = express();
@@ -69,8 +64,7 @@ const runServer = () => {
   app.use(express.json({ limit: "10kb" }));
 
   // Timeout middleware
-  app.use(timeout("20s")); // Set a 20-second timeout for all requests
-  app.use(haltOnTimedOut); // Middleware to handle the timeout
+  app.use(timeout('30s'));
 
   // Middleware to generate x-request-id for tracking
   app.use((req, res, next) => {
@@ -80,8 +74,6 @@ const runServer = () => {
 
   // Route to generate CAPTCHA
   app.post("/genCaptcha", async (req, res, next) => {
-    if (req.timedout) return;
-    
     const { reqId, captchaLength, captchaType, audioCaptchaRequired } = req?.body;
     if (
       !reqId ||
@@ -95,13 +87,11 @@ const runServer = () => {
           "Missing required fields: reqId, captchaLength, captchaType, and audioCaptchaRequired",
       });
     }
-
     const data = JSON?.stringify({
       captchaLength: captchaLength,
       captchaType: captchaType,
       audioCaptchaRequired: audioCaptchaRequired,
     });
-
     const config = {
       method: "post",
       url: "https://tathya.uidai.gov.in/audioCaptchaService/api/captcha/v3/generation",
@@ -126,35 +116,77 @@ const runServer = () => {
     console.log(config, "CAPTCHA Generation config");
     try {
       const response = await axios.request(config);
-      if (req.timedout) return;
       console.log(response?.data, "CAPTCHA Generation response");
       logger.info(
         `CAPTCHA Generation Request Successful - Status: ${response.data}`
       );
       res.status(200).json({ ...response?.data, xRequestId: reqId });
     } catch (error) {
-      if (req.timedout) return;
       logger.error(`CAPTCHA Generation Failed - Error: ${error.message}`);
       next(error);
     }
   });
 
-  // Other routes (e.g., Aadhaar validation)...
+  // Route to validate Aadhaar
+  app.post("/validateAadhaar", async (req, res, next) => {
+    const { uid, captchaTxnId, captcha, transactionId, captchaLogic } =
+      req.body;
+    if (!uid || !captchaTxnId || !captcha || !transactionId || !captchaLogic) {
+      return res.status(400).json({
+        error: true,
+        message:
+          "Missing required fields: uid, captchaTxnId, captcha, transactionId, captchaLogic",
+      });
+    }
+    const data = JSON.stringify({
+      uid: uid,
+      captchaTxnId: captchaTxnId,
+      captcha: captcha,
+      transactionId: transactionId,
+      captchaLogic: captchaLogic,
+    });
+    const config = {
+      method: "post",
+      url: "https://tathya.uidai.gov.in/uidVerifyRetrieveService/api/verifyUID",
+      headers: {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en_IN",
+        "appid": "MYAADHAAR",
+        "content-type": "application/json",
+        "sec-ch-ua":
+          '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "x-request-id": transactionId,
+        "Referer": "https://myaadhaar.uidai.gov.in/",
+        "Referrer-Policy": "strict-origin",
+      },
+      data: data,
+    };
+    console.log(config, "Aadhaar verification config");
+    try {
+      const response = await axios.request(config);
+      console.log(response?.data, "Aadhaar Verification response");
+      logger.info(
+        `Aadhaar Verification Request Successful - Status: ${response.data}`
+      );
+      res.status(200).json(response.data);
+    } catch (error) {
+      logger.error(`Aadhaar Verification Failed - Error: ${error.message}`);
+      next(error);
+    }
+  });
 
   // Error handling middleware
   app.use((err, req, res, next) => {
     logger.error(`Unhandled error: ${err.message}`);
-    if (req.timedout) {
-      res.status(503).json({
-        error: true,
-        message: "Request timed out. Please try again later.",
-      });
-    } else {
-      res.status(err.status || 500).json({
-        error: true,
-        message: err.message || "Internal server error",
-      });
-    }
+    res.status(err.status || 500).json({
+      error: true,
+      message: err.message || "Internal server error",
+    });
   });
 
   // Start the server
