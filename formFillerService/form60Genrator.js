@@ -1,6 +1,6 @@
-const { imageFormFiller } = require("../utils/formFiller.js") ;
+const { imageFormFiller } = require("../utils/formFiller.js");
 
- const form60Generator = async (formData) => {
+const form60Generator = async (formData) => {
   try {
     const {
       customerName,
@@ -12,7 +12,27 @@ const { imageFormFiller } = require("../utils/formFiller.js") ;
       dealerState,
       signatureImg,
     } = formData;
-
+    if (
+      !customerName ||
+      !address ||
+      !policyAmount ||
+      !supportDocType ||
+      !supportDocNo ||
+      !dealerState
+    ) {
+      const missingField = !customerName
+        ? "Customer Name"
+        : !address
+        ? "Address"
+        : !policyAmount
+        ? "Policy Amount"
+        : !supportDocType
+        ? "Support Document Type"
+        : !supportDocNo
+        ? "Support Doc No"
+        : "Place";
+      throw new Error(`Missing required ${missingField} in formData`);
+    }
     const currentDate = new Date();
     const consentDate = currentDate.getDate();
     const consentMonth = currentDate.toLocaleString("default", {
