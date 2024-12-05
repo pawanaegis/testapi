@@ -9,6 +9,7 @@ const winston = require("winston");
 const { v4: uuidv4 } = require("uuid");
 const rateLimit = require("express-rate-limit");
 const timeout = require('connect-timeout');
+const { form60Generator } = require("./formFillerService/form60Genrator");
 
 // Create a Winston logger
 const logger = winston.createLogger({
@@ -26,7 +27,7 @@ const logger = winston.createLogger({
 });
 
 const numCPUs = os.cpus().length;
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3100;
 
 // Apply rate limiter to all requests
 const limiter = rateLimit({
@@ -179,6 +180,25 @@ const runServer = () => {
       next(error);
     }
   });
+  app.post("/generate-form60", async(req, res) => {
+    try {
+    // const request = {...req, body: JSON.parse(req?.body) || req?.body} 
+    const request = req;
+    const imageBuffer = await form60Generator(request?.body);
+    res.setHeader('Content-Type', 'application/jpeg');
+    res.status(200).send({
+      message: "Form 60 generated",
+      form60Image: imageBuffer
+    });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        message: "Error generating form 60",
+        error: error
+      });
+    }
+    // const generateForm60Buffer = await form60Generator(request?.body);
+  })
 
   // Error handling middleware
   app.use((err, req, res, next) => {
