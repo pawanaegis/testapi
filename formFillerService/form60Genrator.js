@@ -11,6 +11,7 @@ const form60Generator = async (formData) => {
       supportDocNo,
       dealerState,
       signatureImg,
+      reason
     } = formData;
     if (
       !customerName ||
@@ -47,7 +48,7 @@ const form60Generator = async (formData) => {
       { text: `${address}`, position: { x: 160, y: 400 } },
       { text: `${policyAmount}`, position: { x: 430, y: 526 } },
       { text: `${assessedToTax ? "Yes" : "No"}`, position: { x: 890, y: 570 } },
-      { text: "Not Applied", position: { x: 1010, y: 699 } },
+      { text: `${reason || ""}`, position: { x: 1010, y: 699 } },
       { text: `${supportDocType}`, position: { x: 180, y: 780 } },
       { text: `${supportDocNo}`, position: { x: 350, y: 780 } },
       { text: `${customerName}`, position: { x: 135, y: 915 } },
