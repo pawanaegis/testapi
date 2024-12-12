@@ -3,33 +3,41 @@ const fs = require('fs').promises;
 
 // Function to create a text overlay as an SVG buffer with a box around the text
 const createTextOverlay = async (text, width, height, fontSize, color, padding = 5) => {
-    const textWidth = width - 2 * padding;
-    const textHeight = fontSize + padding;
-  
-    const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <style>
-          .text {
-            font-size: ${fontSize}px;
-            font-family: Arial, sans-serif;
-            fill: ${color};
-            dominant-baseline: middle;
-            text-anchor: start;
-            paint-order: fill;
-          }
-          .box {
-            fill: none; /* Remove shadow by default */
-            stroke: white; /* Or specify stroke if needed */
-            stroke-width: 1;
-          }
-        </style>
-        <rect x="${padding}" y="${padding}" width="${textWidth}" height="${textHeight}" class="box" />
-        <text x="${padding}" y="${textHeight / 2 + padding}" class="text">${text}</text>
-      </svg>`;
-  
-    return sharp(Buffer.from(svg)).png().toBuffer();
-  };
-  
+  // Escape special characters for XML
+  const sanitizeText = (str) => 
+    str.replace(/&/g, '&amp;')
+       .replace(/</g, '&lt;')
+       .replace(/>/g, '&gt;')
+       .replace(/"/g, '&quot;')
+       .replace(/'/g, '&apos;');
+
+  const sanitizedText = sanitizeText(text);
+  const textWidth = width - 2 * padding;
+  const textHeight = fontSize + padding;
+
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .text {
+          font-size: ${fontSize}px;
+          font-family: Arial, sans-serif;
+          fill: ${color};
+          dominant-baseline: middle;
+          text-anchor: start;
+          paint-order: fill;
+        }
+        .box {
+          fill: none; /* Remove shadow by default */
+          stroke: white; /* Or specify stroke if needed */
+          stroke-width: 1;
+        }
+      </style>
+      <rect x="${padding}" y="${padding}" width="${textWidth}" height="${textHeight}" class="box" />
+      <text x="${padding}" y="${textHeight / 2 + padding}" class="text">${sanitizedText}</text>
+    </svg>`;
+
+  return sharp(Buffer.from(svg)).png().toBuffer();
+};
 
 // Main function to process the image and return a base64 string
 const imageFormFiller = async (inputImagePath, elements, signature) => {
