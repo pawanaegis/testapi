@@ -42,7 +42,7 @@ const form60Generator = async (formData) => {
     const fullDate = currentDate.toLocaleString("en-US", {
       timeZone: "Asia/Kolkata",
     });
-    const docNo = (supportDocType)?.toLowerCase() === 'aadhaar card' ? `********${supportDocNo?.value?.slice(-4)}`:supportDocNo;
+    const docNo = (supportDocType)?.toLowerCase() === 'aadhaar card' ? `********${supportDocNo?.slice(-4)}`:supportDocNo;
     const data = [
       { text: `${customerName}`, position: { x: 530, y: 360 } },
       { text: `${address}`, position: { x: 160, y: 400 } },
