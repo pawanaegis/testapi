@@ -42,7 +42,7 @@ const form60Generator = async (formData) => {
     const fullDate = currentDate.toLocaleString("en-US", {
       timeZone: "Asia/Kolkata",
     });
-
+    const docNo = (supportDocType)?.toLowerCase() === 'aadhaar card' ? `********${supportDocNo?.value?.slice(-4)}`:supportDocNo;
     const data = [
       { text: `${customerName}`, position: { x: 530, y: 360 } },
       { text: `${address}`, position: { x: 160, y: 400 } },
@@ -50,7 +50,7 @@ const form60Generator = async (formData) => {
       { text: `${assessedToTax ? "Yes" : "No"}`, position: { x: 890, y: 570 } },
       { text: `${reason || ""}`, position: { x: 1010, y: 699 } },
       { text: `${supportDocType}`, position: { x: 180, y: 780 } },
-      { text: `${supportDocNo}`, position: { x: 350, y: 780 } },
+      { text: `${docNo}`, position: { x: 350, y: 780 } },
       { text: `${customerName}`, position: { x: 135, y: 915 } },
       { text: `${consentDate}`, position: { x: 290, y: 985 } },
       { text: `${consentMonth}`, position: { x: 570, y: 985 } },
