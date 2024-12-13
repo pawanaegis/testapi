@@ -50,7 +50,7 @@ const form60Generator = async (formData) => {
       { text: `${assessedToTax ? "Yes" : "No"}`, position: { x: 890, y: 570 } },
       { text: `${reason || ""}`, position: { x: 1010, y: 699 } },
       { text: `${supportDocType}`, position: { x: 180, y: 780 } },
-      { text: `${docNo}`, position: { x: 350, y: 780 } },
+      { text: `${docNo}`, position: { x: 360, y: 780 } },
       { text: `${customerName}`, position: { x: 135, y: 915 } },
       { text: `${consentDate}`, position: { x: 290, y: 985 } },
       { text: `${consentMonth}`, position: { x: 570, y: 985 } },
