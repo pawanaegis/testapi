@@ -300,13 +300,23 @@ const runServer = () => {
       logger.info(`Background removal started for image: ${tempFilePath}`);
       
       // Remove background using the library with file path
-      const result = await removeBackground(tempFilePath, {
-        model: 'medium',
-        debug: true,
-        output: {
-          format: 'image/png',
+      let result;
+      try {
+        // Force garbage collection before processing if available
+        if (global.gc) {
+          global.gc();
         }
-      });
+        
+        result = await removeBackground(tempFilePath, {
+          model: 'small', // Use lighter model to prevent memory issues on server
+          output: {
+            format: 'image/png'
+          }
+        });
+      } catch (bgRemovalError) {
+        logger.error(`Background removal library error: ${bgRemovalError.message}`);
+        throw new Error(`Background removal failed: ${bgRemovalError.message}`);
+      }
       
       // Convert Blob to Buffer if necessary
       let resultBuffer;
