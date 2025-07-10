@@ -335,8 +335,26 @@ const runServer = () => {
         resultBuffer = result;
       }
       
+      // Check image orientation and rotate if vertical
+      const imageMetadata = await sharp(resultBuffer).metadata();
+      const { width, height } = imageMetadata;
+      
+      let finalBuffer = resultBuffer;
+      
+      // If image is vertical (height > width), rotate it to horizontal
+      if (height > width) {
+        logger.info(`Image is vertical (${width}x${height}), rotating to horizontal`);
+        finalBuffer = await sharp(resultBuffer)
+          .rotate(90) // Rotate 90 degrees clockwise
+          .png()
+          .toBuffer();
+        logger.info(`Image rotated successfully`);
+      } else {
+        logger.info(`Image is already horizontal (${width}x${height}), no rotation needed`);
+      }
+      
       // Convert result to base64 PNG format (preserves transparency)
-       const resultBase64 = resultBuffer.toString('base64');
+      const resultBase64 = finalBuffer.toString('base64');
       
       logger.info(`Background removal completed successfully`);
       res.status(200).json({
