@@ -302,6 +302,7 @@ const runServer = () => {
       // Remove background using the library with file path
       const result = await removeBackground(tempFilePath, {
         model: 'medium',
+        debug: true,
         output: {
           format: 'image/png',
         }
