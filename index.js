@@ -9,6 +9,8 @@ import winston from "winston";
 import { v4 as uuidv4 } from "uuid";
 import rateLimit from "express-rate-limit";
 import timeout from "connect-timeout";
+import fs from "fs";
+import path from "path";
 import { form60Generator } from "./formFillerService/form60Genrator.js";
 import { processAadhaarPdf } from "./adhaarDownload/aadhaarPdf.js";
 import { removeBackground } from "@imgly/background-removal-node";
@@ -261,6 +263,8 @@ const runServer = () => {
   });
   // Route to remove background from image
   app.post("/removeBg", async (req, res, next) => {
+    let tempFilePath = null;
+    
     try {
       const { image } = req.body;
       
@@ -280,16 +284,42 @@ const runServer = () => {
       // Convert base64 to buffer
       const imageBuffer = Buffer.from(base64Data, 'base64');
       
-      logger.info(`Background removal started for image`);
+      // Create tmp directory if it doesn't exist
+      const tmpDir = path.join(process.cwd(), 'tmp');
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
       
-      // Remove background using the library
-      const resultBuffer = await removeBackground(imageBuffer);
+      // Generate unique filename for temporary image
+      const uniqueId = uuidv4();
+      tempFilePath = path.join(tmpDir, `temp_${uniqueId}.png`);
       
-      // Convert result back to base64
-      const resultBase64 = resultBuffer.toString('base64');
+      // Save base64 image to temporary file
+      fs.writeFileSync(tempFilePath, imageBuffer);
+      
+      logger.info(`Background removal started for image: ${tempFilePath}`);
+      
+      // Remove background using the library with file path
+      const result = await removeBackground(tempFilePath, {
+        model: 'medium',
+        output: {
+          format: 'image/png',
+        }
+      });
+      
+      // Convert Blob to Buffer if necessary
+      let resultBuffer;
+      if (result instanceof Blob) {
+        const arrayBuffer = await result.arrayBuffer();
+        resultBuffer = Buffer.from(arrayBuffer);
+      } else {
+        resultBuffer = result;
+      }
+      
+      // Convert result to base64 PNG format (preserves transparency)
+       const resultBase64 = resultBuffer.toString('base64');
       
       logger.info(`Background removal completed successfully`);
-      
       res.status(200).json({
         success: true,
         message: "Background removed successfully",
@@ -302,6 +332,16 @@ const runServer = () => {
         error: true,
         message: `Background removal failed: ${error.message}`
       });
+    } finally {
+      // Clean up temporary file
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+          logger.info(`Temporary file deleted: ${tempFilePath}`);
+        } catch (deleteError) {
+          logger.error(`Failed to delete temporary file: ${deleteError.message}`);
+        }
+      }
     }
   });
   
