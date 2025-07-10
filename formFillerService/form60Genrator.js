@@ -62,7 +62,7 @@ const form60Generator = async (formData) => {
     const signature = {
       image: signatureImg,
       position: { x: 870, y: 1120 },
-      size: { width: 250, height: 80 },
+      size: { width: 375, height: 120 },
     };
 
     const form60Image = "./formsImage/Form60.jpg"; // Base64-encoded image input
