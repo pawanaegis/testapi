@@ -1,5 +1,5 @@
-const sharp = require('sharp');
-const fs = require('fs').promises;
+import sharp from 'sharp';
+import { promises as fs } from 'fs';
 
 // Function to create a text overlay as an SVG buffer with a box around the text
 const createTextOverlay = async (text, width, height, fontSize, color, padding = 5) => {
@@ -81,4 +81,4 @@ const imageFormFiller = async (inputImagePath, elements, signature) => {
     throw new Error(`Error processing image: ${error.message}`);
   }
 };
-module.exports = { imageFormFiller };
+export { imageFormFiller };

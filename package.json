@@ -2,6 +2,7 @@
   "name": "testapi",
   "version": "1.0.0",
   "description": "Added Readme file.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -18,6 +19,7 @@
   },
   "homepage": "https://github.com/pawanaegis/testapi#readme",
   "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
     "axios": "^1.7.7",
     "cluster": "^0.7.7",
     "compression": "^1.7.4",
@@ -27,6 +29,9 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "os": "^0.1.2",
+    "pdf-lib": "^1.17.1",
+    "pdf2pic": "^3.1.4",
+    "pdfjs-dist": "^5.2.133",
     "sharp": "^0.33.5",
     "uuid": "^10.0.0",
     "winston": "^3.14.2"

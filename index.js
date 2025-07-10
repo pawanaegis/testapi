@@ -1,15 +1,17 @@
-const express = require("express");
-const axios = require("axios");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const compression = require("compression");
-const cluster = require("cluster");
-const os = require("os");
-const winston = require("winston");
-const { v4: uuidv4 } = require("uuid");
-const rateLimit = require("express-rate-limit");
-const timeout = require('connect-timeout');
-const { form60Generator } = require("./formFillerService/form60Genrator");
+import express from "express";
+import axios from "axios";
+import helmet from "helmet";
+import morgan from "morgan";
+import compression from "compression";
+import cluster from "cluster";
+import os from "os";
+import winston from "winston";
+import { v4 as uuidv4 } from "uuid";
+import rateLimit from "express-rate-limit";
+import timeout from "connect-timeout";
+import { form60Generator } from "./formFillerService/form60Genrator.js";
+import { processAadhaarPdf } from "./adhaarDownload/aadhaarPdf.js";
+import { removeBackground } from "@imgly/background-removal-node";
 
 // Create a Winston logger
 const logger = winston.createLogger({
@@ -63,10 +65,10 @@ const runServer = () => {
 
   // Body parsing
   app.use(express.json({ limit: "5mb" }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
-  
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
   // Timeout middleware
-  app.use(timeout('30s'));
+  app.use(timeout("30s"));
 
   // Middleware to generate x-request-id for tracking
   app.use((req, res, next) => {
@@ -76,7 +78,8 @@ const runServer = () => {
 
   // Route to generate CAPTCHA
   app.post("/genCaptcha", async (req, res, next) => {
-    const { reqId, captchaLength, captchaType, audioCaptchaRequired } = req?.body;
+    const { reqId, captchaLength, captchaType, audioCaptchaRequired } =
+      req?.body;
     if (
       !reqId ||
       !captchaLength ||
@@ -97,6 +100,7 @@ const runServer = () => {
     const config = {
       method: "post",
       url: "https://tathya.uidai.gov.in/audioCaptchaService/api/captcha/v3/generation",
+      
       headers: {
         accept: "application/json, text/plain, */*",
         "accept-language": "en_IN",
@@ -110,7 +114,7 @@ const runServer = () => {
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "x-request-id": reqId,
-        "Referer": "https://myaadhaar.uidai.gov.in/",
+        Referer: "https://myaadhaar.uidai.gov.in/",
         "Referrer-Policy": "strict-origin",
       },
       data: data,
@@ -151,9 +155,9 @@ const runServer = () => {
       method: "post",
       url: "https://tathya.uidai.gov.in/uidVerifyRetrieveService/api/verifyUID",
       headers: {
-        "accept": "application/json, text/plain, */*",
+        accept: "application/json, text/plain, */*",
         "accept-language": "en_IN",
-        "appid": "MYAADHAAR",
+        appid: "MYAADHAAR",
         "content-type": "application/json",
         "sec-ch-ua":
           '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
@@ -163,7 +167,7 @@ const runServer = () => {
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "x-request-id": transactionId,
-        "Referer": "https://myaadhaar.uidai.gov.in/",
+        Referer: "https://myaadhaar.uidai.gov.in/",
         "Referrer-Policy": "strict-origin",
       },
       data: data,
@@ -181,16 +185,16 @@ const runServer = () => {
       next(error);
     }
   });
-  app.post("/generate-form60", async(req, res) => {
+  app.post("/generate-form60", async (req, res) => {
     try {
-    // const request = {...req, body: JSON.parse(req?.body) || req?.body} 
-    const request = req;
-    const imageBuffer = await form60Generator(request?.body);
-    res.setHeader('Content-Type', 'application/jpeg');
-    res.status(200).send({
-      message: "Form 60 generated",
-      form60Image: imageBuffer
-    });
+      // const request = {...req, body: JSON.parse(req?.body) || req?.body}
+      const request = req;
+      const imageBuffer = await form60Generator(request?.body);
+      res.setHeader("Content-Type", "application/jpeg");
+      res.status(200).send({
+        message: "Form 60 generated",
+        form60Image: imageBuffer,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).send({
@@ -198,8 +202,207 @@ const runServer = () => {
       });
     }
     // const generateForm60Buffer = await form60Generator(request?.body);
-  })
+  });
+  app.post("/generate-otp", async (req, res, next) => {
+    const { uid, captchaTxnId, captcha, transactionId } = req.body;
+    let data = JSON.stringify({
+      uidNumber: uid,
+      captchaTxnId: captchaTxnId,
+      captchaValue: captcha,
+      transactionId: transactionId,
+    });
+    if (!uid || !captchaTxnId || !captcha || !transactionId) {
+      return res.status(400).json({
+        error: true,
+        message:
+          "Missing required fields: uid, captchaTxnId, captcha, transactionId",
+      });
+    }
+    let config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: "https://tathya.uidai.gov.in/unifiedAppAuthService/api/v2/generate/aadhaar/otp",
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "en_IN",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Content-Type": "application/json",
+        DNT: "1",
+        Origin: "https://myaadhaar.uidai.gov.in",
+        Pragma: "no-cache",
+        Referer: "https://myaadhaar.uidai.gov.in/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0",
+        appid: "MYAADHAAR",
+        "sec-ch-ua":
+          '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+        "x-request-id": transactionId,
+      },
+      data: data,
+    };
+    console.log(config, "OTP Generation config");
+    try {
+      const response = await axios.request(config);
+      console.log(response?.data, "OTP Generation response");
+      logger.info(
+        `OTP Generation Request Successful - Status: ${response.data}`
+      );
+      res.status(200).json(response.data);
+    } catch (error) {
+      logger.error(`OTP Generation Failed - Error: ${error.message}`);
+      next(error);
+    }
+  });
+  // Route to remove background from image
+  app.post("/removeBg", async (req, res, next) => {
+    try {
+      const { image } = req.body;
+      
+      if (!image) {
+        return res.status(400).json({
+          error: true,
+          message: "Missing required field: image (base64 string)"
+        });
+      }
+      
+      // Handle base64 string - remove data URL prefix if present
+      let base64Data = image;
+      if (image.startsWith('data:')) {
+        base64Data = image.split(',')[1];
+      }
+      
+      // Convert base64 to buffer
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      
+      logger.info(`Background removal started for image`);
+      
+      // Remove background using the library
+      const resultBuffer = await removeBackground(imageBuffer);
+      
+      // Convert result back to base64
+      const resultBase64 = resultBuffer.toString('base64');
+      
+      logger.info(`Background removal completed successfully`);
+      
+      res.status(200).json({
+        success: true,
+        message: "Background removed successfully",
+        image: resultBase64
+      });
+      
+    } catch (error) {
+      logger.error(`Background removal failed: ${error.message}`);
+      res.status(500).json({
+        error: true,
+        message: `Background removal failed: ${error.message}`
+      });
+    }
+  });
+  
+  // Route to download and process Aadhaar PDF
+  app.post("/download-aadhaar", async (req, res, next) => {
+    const { uid, otp, otpTransactionId, transactionId, pdfPassword } = req.body;
+    
+    // Define crop configuration - adjust these values as needed
+    const cropConfig = {
+      x: 100,      // X coordinate to start cropping from
+      y: 200,      // Y coordinate to start cropping from
+      width: 800,  // Width of the crop area
+      height: 600  // Height of the crop area
+    };
+    
+    let data = JSON.stringify({
+      uid: uid,
+      mask: false,
+      otp: otp,
+      otpTxnId: otpTransactionId,
+    });
 
+    let config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: "https://tathya.uidai.gov.in/downloadAadhaarService/api/aadhaar/download",
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "en_IN",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Content-Type": "application/json",
+        DNT: "1",
+        Origin: "https://myaadhaar.uidai.gov.in",
+        Pragma: "no-cache",
+        Referer: "https://myaadhaar.uidai.gov.in/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0",
+        appid: "MYAADHAAR",
+        "sec-ch-ua":
+          '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+        "transactionId": transactionId,
+        "x-request-id": transactionId,
+      },
+      data: data,
+    };
+    
+    console.log(config, "Aadhaar Download config");
+    
+    try {
+      // Get the PDF from the API
+      const response = await axios.request(config);
+      console.log("Aadhaar Download response received");
+      
+      // Check if the response contains the PDF data
+      if (response?.data?.aadhaarPdf) {
+        try {
+          // Process the PDF: decrypt, convert to image, crop, and get base64
+          const base64Image = await processAadhaarPdf(
+            response.data.aadhaarPdf, 
+            pdfPassword,
+            cropConfig
+          );
+          
+          // Return the processed image
+          logger.info(`Aadhaar PDF processed successfully`);
+          res.status(200).json({
+            success: true,
+            message: "Aadhaar PDF processed successfully",
+            base64Image: base64Image
+          });
+        } catch (processingError) {
+          logger.error(`Aadhaar PDF processing failed: ${processingError.message}`);
+          res.status(500).json({
+            success: false,
+            message: `Failed to process Aadhaar PDF: ${processingError.message}`
+          });
+        }
+      } else {
+        // If the PDF is not in the response
+        logger.error(`Aadhaar PDF not found in response`);
+        res.status(400).json({
+          success: false,
+          message: "Aadhaar PDF not found in response",
+          originalResponse: response.data
+        });
+      }
+    } catch (error) {
+      logger.error(`Aadhaar Download Failed - Error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        success: false,
+        message: `Aadhaar Download Failed: ${error.message}`,
+        error: error.response?.data || error.message
+      });
+    }
+  });
   // Error handling middleware
   app.use((err, req, res, next) => {
     logger.error(`Unhandled error: ${err.message}`);
@@ -228,7 +431,7 @@ const runServer = () => {
 };
 
 // Multi-core clustering for improved performance
-if (cluster.isMaster) {
+if (cluster.isPrimary) {
   logger.info(`Master process running with PID: ${process.pid}`);
   // Fork workers for each CPU core
   for (let i = 0; i < numCPUs; i++) {

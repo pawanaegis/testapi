@@ -1,4 +1,4 @@
-const { imageFormFiller } = require("../utils/formFiller.js");
+import { imageFormFiller } from "../utils/formFiller.js";
 
 const form60Generator = async (formData) => {
   try {
@@ -73,4 +73,4 @@ const form60Generator = async (formData) => {
   }
 };
 
-module.exports = { form60Generator };
+export { form60Generator };
