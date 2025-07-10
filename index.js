@@ -308,7 +308,7 @@ const runServer = () => {
         }
         
         result = await removeBackground(tempFilePath, {
-          model: 'small',
+          model: 'medium',
           debug: true, // Use lighter model to prevent memory issues on server
           output: {
             format: 'image/png'
