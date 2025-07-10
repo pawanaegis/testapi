@@ -14,6 +14,7 @@ import path from "path";
 import { form60Generator } from "./formFillerService/form60Genrator.js";
 import { processAadhaarPdf } from "./adhaarDownload/aadhaarPdf.js";
 import { removeBackground } from "@imgly/background-removal-node";
+import sharp from "sharp";
 
 // Create a Winston logger
 const logger = winston.createLogger({
@@ -294,8 +295,14 @@ const runServer = () => {
       const uniqueId = uuidv4();
       tempFilePath = path.join(tmpDir, `temp_${uniqueId}.png`);
       
-      // Save base64 image to temporary file
-      fs.writeFileSync(tempFilePath, imageBuffer);
+      // Convert image to RGBA format using Sharp to ensure 4-channel support
+      const processedImageBuffer = await sharp(imageBuffer)
+        .ensureAlpha() // Ensure alpha channel exists (converts RGB to RGBA)
+        .png() // Convert to PNG format
+        .toBuffer();
+      
+      // Save processed image to temporary file
+      fs.writeFileSync(tempFilePath, processedImageBuffer);
       
       logger.info(`Background removal started for image: ${tempFilePath}`);
       
