@@ -5,7 +5,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:staged": "prettier --write --cache --ignore-unknown"
   },
   "repository": {
     "type": "git",
@@ -18,6 +21,9 @@
     "url": "https://github.com/pawanaegis/testapi/issues"
   },
   "homepage": "https://github.com/pawanaegis/testapi#readme",
+  "devDependencies": {
+    "prettier": "^3.1.0"
+  },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",
     "axios": "^1.7.7",

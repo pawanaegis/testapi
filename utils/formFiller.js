@@ -2,14 +2,22 @@ import sharp from 'sharp';
 import { promises as fs } from 'fs';
 
 // Function to create a text overlay as an SVG buffer with a box around the text
-const createTextOverlay = async (text, width, height, fontSize, color, padding = 5) => {
+const createTextOverlay = async (
+  text,
+  width,
+  height,
+  fontSize,
+  color,
+  padding = 5
+) => {
   // Escape special characters for XML
-  const sanitizeText = (str) => 
-    str.replace(/&/g, '&amp;')
-       .replace(/</g, '&lt;')
-       .replace(/>/g, '&gt;')
-       .replace(/"/g, '&quot;')
-       .replace(/'/g, '&apos;');
+  const sanitizeText = str =>
+    str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
 
   const sanitizedText = sanitizeText(text);
   const textWidth = width - 2 * padding;
@@ -47,7 +55,13 @@ const imageFormFiller = async (inputImagePath, elements, signature) => {
 
     // Generate buffers for each text element and add to overlays
     for (const element of elements) {
-      const textBuffer = await createTextOverlay(element.text, 700, 60, 22, 'black');
+      const textBuffer = await createTextOverlay(
+        element.text,
+        700,
+        60,
+        22,
+        'black'
+      );
       overlays.push({
         input: textBuffer,
         top: element.position.y,

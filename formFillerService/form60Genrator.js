@@ -1,6 +1,6 @@
-import { imageFormFiller } from "../utils/formFiller.js";
+import { imageFormFiller } from '../utils/formFiller.js';
 
-const form60Generator = async (formData) => {
+const form60Generator = async formData => {
   try {
     const {
       customerName,
@@ -11,7 +11,7 @@ const form60Generator = async (formData) => {
       supportDocNo,
       dealerState,
       signatureImg,
-      reason
+      reason,
     } = formData;
     if (
       !customerName ||
@@ -22,33 +22,36 @@ const form60Generator = async (formData) => {
       !dealerState
     ) {
       const missingField = !customerName
-        ? "Customer Name"
+        ? 'Customer Name'
         : !address
-        ? "Address"
-        : !policyAmount
-        ? "Policy Amount"
-        : !supportDocType
-        ? "Support Document Type"
-        : !supportDocNo
-        ? "Support Doc No"
-        : "Place";
+          ? 'Address'
+          : !policyAmount
+            ? 'Policy Amount'
+            : !supportDocType
+              ? 'Support Document Type'
+              : !supportDocNo
+                ? 'Support Doc No'
+                : 'Place';
       throw new Error(`Missing required ${missingField} in formData`);
     }
     const currentDate = new Date();
     const consentDate = currentDate.getDate();
-    const consentMonth = currentDate.toLocaleString("default", {
-      month: "long",
+    const consentMonth = currentDate.toLocaleString('default', {
+      month: 'long',
     });
-    const fullDate = currentDate.toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata",
+    const fullDate = currentDate.toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata',
     });
-    const docNo = (supportDocType)?.toLowerCase() === 'aadhaar card' ? `********${supportDocNo?.slice(-4)}`:supportDocNo;
+    const docNo =
+      supportDocType?.toLowerCase() === 'aadhaar card'
+        ? `********${supportDocNo?.slice(-4)}`
+        : supportDocNo;
     const data = [
       { text: `${customerName}`, position: { x: 530, y: 360 } },
       { text: `${address}`, position: { x: 160, y: 400 } },
       { text: `${policyAmount}`, position: { x: 430, y: 526 } },
-      { text: `${assessedToTax ? "Yes" : "No"}`, position: { x: 890, y: 570 } },
-      { text: `${reason || ""}`, position: { x: 1010, y: 699 } },
+      { text: `${assessedToTax ? 'Yes' : 'No'}`, position: { x: 890, y: 570 } },
+      { text: `${reason || ''}`, position: { x: 1010, y: 699 } },
       { text: `${supportDocType}`, position: { x: 180, y: 780 } },
       { text: `${docNo}`, position: { x: 360, y: 780 } },
       { text: `${customerName}`, position: { x: 135, y: 915 } },
@@ -65,7 +68,7 @@ const form60Generator = async (formData) => {
       size: { width: 375, height: 120 },
     };
 
-    const form60Image = "./formsImage/Form60.jpg"; // Base64-encoded image input
+    const form60Image = './formsImage/Form60.jpg'; // Base64-encoded image input
     return imageFormFiller(form60Image, data, signature);
   } catch (error) {
     console.error(error);
