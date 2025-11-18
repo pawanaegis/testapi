@@ -410,7 +410,14 @@ const runServer = () => {
   // Route to download and process Aadhaar PDF
   app.post('/download-aadhaar', async (req, res, next) => {
     const { uid, otp, otpTransactionId, transactionId, pdfPassword } = req.body;
-
+    // Validate required fields
+    if (!uid || !otp || !otpTransactionId || !transactionId || !pdfPassword) {
+      return res.status(404).json({
+        error: true,
+        message:
+          'Missing required fields: uid, otp, otpTransactionId, transactionId, pdfPassword',
+      });
+    }
     // Define crop configuration - adjust these values as needed
     const cropConfig = {
       x: 100, // X coordinate to start cropping from
